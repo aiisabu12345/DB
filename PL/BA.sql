@@ -287,7 +287,7 @@ END;
 
 -- 5. Employee / Department : เปลี่ยนผู้บริหารแผนก / พนักงานลาออก
 
--- เปลี่ยนผู้บริหาร : ปิดประวัติเดิม เปิดประวัติใหม่ และสลับสิทธิ์ลงนามขั้นหัวหน้าแผนก
+-- เปลี่ยนผู้บริหาร : เปลี่ยน ManagerID และเพิ่มสิทธิ์ลงนามขั้นหัวหน้าแผนก
 CREATE OR REPLACE PROCEDURE sp_change_manager (
     p_deptid    IN VARCHAR2,
     p_newmgr    IN VARCHAR2,
@@ -304,12 +304,6 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20130, p_newmgr || ' ไม่ได้สังกัดแผนก ' || p_deptid);
     END IF;
 
-    UPDATE ManagementHistory
-       SET EndDate = p_startdate - 1
-     WHERE DeptID = p_deptid AND EndDate IS NULL;
-
-    SELECT NVL(MAX(LineNo), 0) + 1 INTO v_line FROM ManagementHistory WHERE DeptID = p_deptid;
-    INSERT INTO ManagementHistory VALUES (p_deptid, v_line, p_newmgr, p_startdate, NULL);
     UPDATE Department SET ManagerID = p_newmgr WHERE DeptID = p_deptid;
 
     -- ไม่ลบสิทธิ์ของผู้บริหารเดิม เพราะ ApprovalSignature เก่าอ้างอิงอยู่

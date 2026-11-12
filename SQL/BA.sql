@@ -64,7 +64,6 @@ SELECT r.RequestID                              AS Request_ID,
 
 -- 2. สายการลงนามของแต่ละคำขอ
 --    ลำดับ + ขั้นตอน (จาก RequestStatus) + ผู้ลงนาม + แผนกผู้ลงนาม + ใช้เวลากี่วันจากขั้นก่อน (LAG)
---    + ตอนลงนาม ผู้ลงนามเป็นผู้บริหารแผนกจริงหรือไม่ (เทียบ ManagementHistory ตามช่วงวันที่)
 
 SELECT a.RequestID                                       AS Request_ID,
        req.FirstName || ' ' || req.LastName              AS Requester,
@@ -73,7 +72,6 @@ SELECT a.RequestID                                       AS Request_ID,
        rs.StatusName                                     AS Step,
        s.FirstName || ' ' || s.LastName                  AS Signer,
        sd.DeptName                                       AS Signer_Dept,
-       NVL2(mh.EmpID, 'ผู้บริหาร ' || mhd.DeptName, '-')  AS Signer_Is_Manager_Of,
        a.SignDate                                        AS Sign_Date,
        a.SignDate - LAG(a.SignDate, 1, r.WriteDate)
                     OVER (PARTITION BY a.RequestID ORDER BY a.LineNo) AS Days_From_Prev,
@@ -85,10 +83,6 @@ SELECT a.RequestID                                       AS Request_ID,
   JOIN RequestStatus rs      ON rs.StatusID  = a.StatusID
   JOIN Employee s            ON s.EmpID      = a.EmpID
   JOIN Department sd         ON sd.DeptID    = s.DeptID
-  LEFT JOIN ManagementHistory mh
-         ON mh.EmpID = a.EmpID
-        AND a.SignDate BETWEEN mh.StartDate AND NVL(mh.EndDate, a.SignDate)
-  LEFT JOIN Department mhd   ON mhd.DeptID   = mh.DeptID
  ORDER BY a.RequestID, a.LineNo;
 
 
@@ -197,27 +191,3 @@ SELECT rs.FlowOrder                                         AS Flow_Order,
          ON cur.FlowOrder >= rs.FlowOrder
  GROUP BY rs.FlowOrder, rs.StatusID, rs.StatusName
  ORDER BY NVL(rs.FlowOrder, 999);
-
-
--- 7. ประวัติผู้บริหารแต่ละแผนก + ระหว่างดำรงตำแหน่งลงนามคำขอไปกี่ฉบับ (join ตามช่วงวันที่)
---    + ผู้บริหารคนนั้นลาออกแล้วหรือยัง
-
-SELECT d.DeptName                                           AS Department,
-       mh.LineNo                                            AS Term_No,
-       e.FirstName || ' ' || e.LastName                     AS Manager,
-       mh.StartDate                                         AS Start_Date,
-       NVL(TO_CHAR(mh.EndDate, 'DD/MM/YYYY'), 'ปัจจุบัน')    AS End_Date,
-       ROUND(MONTHS_BETWEEN(NVL(mh.EndDate, TRUNC(SYSDATE)), mh.StartDate) / 12, 1) AS Years,
-       COUNT(a.RequestID)                                   AS Signed,
-       SUM(CASE WHEN a.Result = 'ไม่อนุมัติ' THEN 1 ELSE 0 END) AS Rejected,
-       CASE WHEN e.ResignDate IS NOT NULL
-            THEN 'ลาออก ' || TO_CHAR(e.ResignDate, 'DD/MM/YYYY') ELSE '-' END AS Employee_Status,
-       CASE WHEN d.ManagerID = mh.EmpID THEN 'Y' ELSE 'N' END AS Is_Current
-  FROM ManagementHistory mh
-  JOIN Department d             ON d.DeptID = mh.DeptID
-  JOIN Employee e               ON e.EmpID  = mh.EmpID
-  LEFT JOIN ApprovalSignature a ON a.EmpID  = mh.EmpID
-                               AND a.SignDate BETWEEN mh.StartDate AND NVL(mh.EndDate, a.SignDate)
- GROUP BY d.DeptName, mh.LineNo, e.FirstName, e.LastName, mh.StartDate, mh.EndDate,
-          e.ResignDate, d.ManagerID, mh.EmpID
- ORDER BY d.DeptName, mh.LineNo;

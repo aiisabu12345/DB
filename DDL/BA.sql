@@ -83,21 +83,7 @@ CREATE TABLE TravelRequest (
 
 -- ===== Transaction Table =====
 
--- 6. MANAGEMENTHISTORY (ประวัติการบริหารแผนก : weak entity ของ Department)
-CREATE TABLE ManagementHistory (
-    DeptID      VARCHAR2(10),
-    LineNo      NUMBER(5),
-    EmpID       VARCHAR2(10),
-    StartDate   DATE,
-    EndDate     DATE,
-    CONSTRAINT PK_ManagementHistory PRIMARY KEY (DeptID, LineNo),
-    CONSTRAINT FK_MH_Dept FOREIGN KEY (DeptID)
-        REFERENCES Department(DeptID),
-    CONSTRAINT FK_MH_Emp FOREIGN KEY (EmpID)
-        REFERENCES Employee(EmpID)
-);
-
--- 7. STATUSAPPROVER (ผู้มีสิทธิ์อนุมัติในแต่ละสถานะ : weak entity ของ RequestStatus)
+-- 6. STATUSAPPROVER (ผู้มีสิทธิ์อนุมัติในแต่ละสถานะ : weak entity ของ RequestStatus)
 CREATE TABLE StatusApprover (
     StatusID    VARCHAR2(10),
     LineNo      NUMBER(5),
@@ -110,7 +96,7 @@ CREATE TABLE StatusApprover (
     CONSTRAINT UQ_SA_StatusEmp UNIQUE (StatusID, EmpID)
 );
 
--- 8. TRAVELCOMPANION (พนักงานที่ร่วมเดินทาง : weak entity ของ TravelRequest)
+-- 7. TRAVELCOMPANION (พนักงานที่ร่วมเดินทาง : weak entity ของ TravelRequest)
 CREATE TABLE TravelCompanion (
     RequestID   VARCHAR2(10),
     LineNo      NUMBER(5),
@@ -122,7 +108,7 @@ CREATE TABLE TravelCompanion (
         REFERENCES Employee(EmpID)
 );
 
--- 9. ADVANCEEXPENSEITEM (รายการค่าใช้จ่ายล่วงหน้า : weak entity ของ TravelRequest)
+-- 8. ADVANCEEXPENSEITEM (รายการค่าใช้จ่ายล่วงหน้า : weak entity ของ TravelRequest)
 CREATE TABLE AdvanceExpenseItem (
     RequestID   VARCHAR2(10),
     LineNo      NUMBER(5),
@@ -134,7 +120,7 @@ CREATE TABLE AdvanceExpenseItem (
         REFERENCES TravelRequest(RequestID)
 );
 
--- 10. APPROVALSIGNATURE (การลงนามอนุมัติ : weak entity ของ TravelRequest
+-- 9. APPROVALSIGNATURE (การลงนามอนุมัติ : weak entity ของ TravelRequest
 --     ผู้ลงนามต้องอยู่ใน StatusApprover ของสถานะที่ลงนาม)
 CREATE TABLE ApprovalSignature (
     RequestID       VARCHAR2(10),
@@ -151,7 +137,7 @@ CREATE TABLE ApprovalSignature (
         REFERENCES StatusApprover(StatusID, EmpID)
 );
 
--- 11. TRAVELEVIDENCE (หลักฐานการเดินทาง / การใช้เงินจริง : weak entity ของ TravelRequest)
+-- 10. TRAVELEVIDENCE (หลักฐานการเดินทาง / การใช้เงินจริง : weak entity ของ TravelRequest)
 CREATE TABLE TravelEvidence (
     RequestID   VARCHAR2(10),
     LineNo      NUMBER(5),
@@ -164,7 +150,7 @@ CREATE TABLE TravelEvidence (
         REFERENCES TravelRequest(RequestID)
 );
 
--- 12. TRANSFEREVIDENCE (หลักฐานการโอน : สำรองจ่าย / คืนเงินที่ใช้เหลือ / เบิกเงินที่ใช้เกิน)
+-- 11. TRANSFEREVIDENCE (หลักฐานการโอน : สำรองจ่าย / คืนเงินที่ใช้เหลือ / เบิกเงินที่ใช้เกิน)
 CREATE TABLE TransferEvidence (
     EvidenceID      VARCHAR2(10) PRIMARY KEY,
     RequestID       VARCHAR2(10),
@@ -207,14 +193,6 @@ ALTER TABLE Employee MODIFY (DeptID VARCHAR2(10) NOT NULL);
 ALTER TABLE Employee
   ADD CONSTRAINT CK_Emp_ResignDate
   CHECK (ResignDate IS NULL OR ResignDate >= HireDate)
-  ENABLE VALIDATE;
-
--- ประวัติการบริหาร วันสิ้นสุดต้องไม่ก่อนวันเริ่ม
-ALTER TABLE ManagementHistory MODIFY (EmpID VARCHAR2(10) NOT NULL);
-ALTER TABLE ManagementHistory MODIFY (StartDate DATE NOT NULL);
-ALTER TABLE ManagementHistory
-  ADD CONSTRAINT CK_MH_Date
-  CHECK (EndDate IS NULL OR EndDate >= StartDate)
   ENABLE VALIDATE;
 
 -- ผู้อนุมัติในสถานะต้องไม่เป็นค่าว่าง

@@ -61,16 +61,7 @@ INSERT INTO TravelRequest VALUES ('TR006','E012',TO_DATE('01/11/2026','DD/MM/YYY
 COMMIT;
 
 
--- 6. MANAGEMENTHISTORY (DeptID, LineNo, EmpID, StartDate, EndDate) : EndDate NULL = ยังบริหารอยู่
-INSERT INTO ManagementHistory VALUES ('D01',1,'E001',TO_DATE('01/01/2020','DD/MM/YYYY'),NULL);
-INSERT INTO ManagementHistory VALUES ('D02',1,'E002',TO_DATE('01/01/2021','DD/MM/YYYY'),NULL);
-INSERT INTO ManagementHistory VALUES ('D03',1,'E003',TO_DATE('01/06/2021','DD/MM/YYYY'),NULL);
-INSERT INTO ManagementHistory VALUES ('D04',1,'E014',TO_DATE('01/02/2016','DD/MM/YYYY'),TO_DATE('31/12/2023','DD/MM/YYYY'));
-INSERT INTO ManagementHistory VALUES ('D04',2,'E004',TO_DATE('01/01/2024','DD/MM/YYYY'),NULL);
-INSERT INTO ManagementHistory VALUES ('D05',1,'E013',TO_DATE('01/01/2015','DD/MM/YYYY'),NULL);
-
-
--- 7. STATUSAPPROVER (StatusID, LineNo, EmpID) : ใครมีสิทธิ์อนุมัติในแต่ละสถานะ
+-- 6. STATUSAPPROVER (StatusID, LineNo, EmpID) : ใครมีสิทธิ์อนุมัติในแต่ละสถานะ
 INSERT INTO StatusApprover VALUES ('RS01',1,'E001');
 INSERT INTO StatusApprover VALUES ('RS01',2,'E003');
 INSERT INTO StatusApprover VALUES ('RS01',3,'E004');
@@ -79,7 +70,7 @@ INSERT INTO StatusApprover VALUES ('RS02',2,'E007');
 INSERT INTO StatusApprover VALUES ('RS03',1,'E013');
 
 
--- 8. TRAVELCOMPANION (RequestID, LineNo, EmpID) : LineNo นับใหม่ในแต่ละคำขอ
+-- 7. TRAVELCOMPANION (RequestID, LineNo, EmpID) : LineNo นับใหม่ในแต่ละคำขอ
 INSERT INTO TravelCompanion VALUES ('TR001',1,'E006');
 INSERT INTO TravelCompanion VALUES ('TR001',2,'E010');
 INSERT INTO TravelCompanion VALUES ('TR002',1,'E012');
@@ -88,7 +79,7 @@ INSERT INTO TravelCompanion VALUES ('TR005',1,'E005');
 INSERT INTO TravelCompanion VALUES ('TR006',1,'E009');
 
 
--- 9. ADVANCEEXPENSEITEM (RequestID, LineNo, ItemName, UnitPrice, Quantity)
+-- 8. ADVANCEEXPENSEITEM (RequestID, LineNo, ItemName, UnitPrice, Quantity)
 INSERT INTO AdvanceExpenseItem VALUES ('TR001',1,'ค่าน้ำมันรถ',1500,1);
 INSERT INTO AdvanceExpenseItem VALUES ('TR001',2,'ค่าที่พัก',1200,2);
 INSERT INTO AdvanceExpenseItem VALUES ('TR001',3,'เบี้ยเลี้ยง',300,3);
@@ -105,7 +96,7 @@ INSERT INTO AdvanceExpenseItem VALUES ('TR006',1,'ค่าน้ำมันร
 INSERT INTO AdvanceExpenseItem VALUES ('TR006',2,'ค่าที่พัก',1100,1);
 
 
--- 10. APPROVALSIGNATURE (RequestID, LineNo, StatusID, EmpID, SignDate, Result, RejectReason)
+-- 9. APPROVALSIGNATURE (RequestID, LineNo, StatusID, EmpID, SignDate, Result, RejectReason)
 -- StatusID = สถานะที่ลงนาม , ผู้ลงนามต้องอยู่ใน StatusApprover ของสถานะนั้น
 INSERT INTO ApprovalSignature VALUES ('TR001',1,'RS01','E001',TO_DATE('01/09/2026','DD/MM/YYYY'),'อนุมัติ',NULL);
 INSERT INTO ApprovalSignature VALUES ('TR001',2,'RS02','E002',TO_DATE('02/09/2026','DD/MM/YYYY'),'อนุมัติ',NULL);
@@ -124,7 +115,7 @@ INSERT INTO ApprovalSignature VALUES ('TR005',2,'RS02','E002',TO_DATE('08/10/202
 INSERT INTO ApprovalSignature VALUES ('TR006',1,'RS01','E003',TO_DATE('02/11/2026','DD/MM/YYYY'),'อนุมัติ',NULL);
 
 
--- 11. TRAVELEVIDENCE (หลักฐานการเดินทาง : RequestID, LineNo, UsedDate, ItemName, Amount, SlipURL)
+-- 10. TRAVELEVIDENCE (หลักฐานการเดินทาง : RequestID, LineNo, UsedDate, ItemName, Amount, SlipURL)
 INSERT INTO TravelEvidence VALUES ('TR001',1,TO_DATE('03/09/2026 08:15','DD/MM/YYYY HH24:MI'),'ค่าน้ำมันรถ',1350,'https://slip.example.com/tr001-1.jpg');
 INSERT INTO TravelEvidence VALUES ('TR001',2,TO_DATE('05/09/2026 11:00','DD/MM/YYYY HH24:MI'),'ค่าที่พัก 2 คืน',2400,'https://slip.example.com/tr001-2.jpg');
 INSERT INTO TravelEvidence VALUES ('TR001',3,TO_DATE('05/09/2026 12:30','DD/MM/YYYY HH24:MI'),'ค่าอาหาร',750,'https://slip.example.com/tr001-3.jpg');
@@ -134,7 +125,7 @@ INSERT INTO TravelEvidence VALUES ('TR002',3,TO_DATE('11/09/2026 16:20','DD/MM/Y
 INSERT INTO TravelEvidence VALUES ('TR002',4,TO_DATE('11/09/2026 17:00','DD/MM/YYYY HH24:MI'),'ค่าจอดรถ',200,'https://slip.example.com/tr002-4.jpg');
 
 
--- 12. TRANSFEREVIDENCE
+-- 11. TRANSFEREVIDENCE
 -- TR001 ใช้ไม่หมด (4800-4500) -> คืน 300 , TR002 ใช้เกิน (2900-2500) -> เบิกเพิ่ม 400
 INSERT INTO TransferEvidence VALUES ('TE001','TR001','TT01',TO_DATE('02/09/2026 14:30','DD/MM/YYYY HH24:MI'),4800,'ธนาคารกสิกรไทย','กิตติพัฒน์ แก้วมณี','KB20260902001','https://slip.example.com/te001.jpg');
 INSERT INTO TransferEvidence VALUES ('TE002','TR001','TT02',TO_DATE('07/09/2026 10:00','DD/MM/YYYY HH24:MI'),300,'ธนาคารไทยพาณิชย์','บริษัท วัสดุก่อสร้าง จำกัด','SCB20260907001','https://slip.example.com/te002.jpg');
