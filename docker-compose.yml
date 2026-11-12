@@ -1,0 +1,17 @@
+services:
+  oracle:
+    image: gvenzl/oracle-free:23-slim
+    container_name: oracle-db
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_PASSWORD: oracle
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - ./init:/container-entrypoint-initdb.d
+      - ./DDL:/sql/DDL
+      - ./DML:/sql/DML
+      - ./PL:/sql/PL
+      - ./SQL:/sql/SQL
+volumes:
+  oracle-data:
