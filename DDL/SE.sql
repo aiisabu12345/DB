@@ -133,57 +133,6 @@ CREATE TABLE LostPostCategory (
         REFERENCES Category(CategoryID)
 );
 
--- ===== Log Table (ประวัติการเปลี่ยนสถานะย้อนหลัง : weak entity ของแต่ละ main table) =====
--- LineNo มากสุด = สถานะล่าสุด (ต้องตรงกับ StatusID ใน main table) , UserID = ผู้เปลี่ยนสถานะ
-
--- 11. FOUNDPOSTSTATUSLOG
-CREATE TABLE FoundPostStatusLog (
-    FoundPostID     VARCHAR2(10),
-    LineNo          NUMBER(5),
-    StatusID        VARCHAR2(10),
-    ChangeDate      DATE,
-    UserID          VARCHAR2(10),
-    CONSTRAINT PK_FoundPostStatusLog PRIMARY KEY (FoundPostID, LineNo),
-    CONSTRAINT FK_FPL_FoundPost FOREIGN KEY (FoundPostID)
-        REFERENCES FoundPost(FoundPostID),
-    CONSTRAINT FK_FPL_Status FOREIGN KEY (StatusID)
-        REFERENCES PostStatus(StatusID),
-    CONSTRAINT FK_FPL_User FOREIGN KEY (UserID)
-        REFERENCES Users(UserID)
-);
-
--- 12. LOSTPOSTSTATUSLOG
-CREATE TABLE LostPostStatusLog (
-    LostPostID      VARCHAR2(10),
-    LineNo          NUMBER(5),
-    StatusID        VARCHAR2(10),
-    ChangeDate      DATE,
-    UserID          VARCHAR2(10),
-    CONSTRAINT PK_LostPostStatusLog PRIMARY KEY (LostPostID, LineNo),
-    CONSTRAINT FK_LPL_LostPost FOREIGN KEY (LostPostID)
-        REFERENCES LostPost(LostPostID),
-    CONSTRAINT FK_LPL_Status FOREIGN KEY (StatusID)
-        REFERENCES PostStatus(StatusID),
-    CONSTRAINT FK_LPL_User FOREIGN KEY (UserID)
-        REFERENCES Users(UserID)
-);
-
--- 13. CLAIMREQUESTSTATUSLOG
-CREATE TABLE ClaimRequestStatusLog (
-    RequestID       VARCHAR2(10),
-    LineNo          NUMBER(5),
-    StatusID        VARCHAR2(10),
-    ChangeDate      DATE,
-    UserID          VARCHAR2(10),
-    CONSTRAINT PK_ClaimRequestStatusLog PRIMARY KEY (RequestID, LineNo),
-    CONSTRAINT FK_CRL_Request FOREIGN KEY (RequestID)
-        REFERENCES ClaimRequest(RequestID),
-    CONSTRAINT FK_CRL_Status FOREIGN KEY (StatusID)
-        REFERENCES ClaimStatus(StatusID),
-    CONSTRAINT FK_CRL_User FOREIGN KEY (UserID)
-        REFERENCES Users(UserID)
-);
-
 -----------------------------
 -- เพิ่ม Business Constraints
 -----------------------------
@@ -234,16 +183,5 @@ ALTER TABLE FoundPostCategory MODIFY (CategoryID VARCHAR2(10) NOT NULL);
 ALTER TABLE FoundPostCategory ADD CONSTRAINT UQ_FPC_PostCat UNIQUE (FoundPostID, CategoryID);
 ALTER TABLE LostPostCategory MODIFY (CategoryID VARCHAR2(10) NOT NULL);
 ALTER TABLE LostPostCategory ADD CONSTRAINT UQ_LPC_PostCat UNIQUE (LostPostID, CategoryID);
-
--- log ต้องมีสถานะ วันที่เปลี่ยน และผู้เปลี่ยน
-ALTER TABLE FoundPostStatusLog MODIFY (StatusID VARCHAR2(10) NOT NULL);
-ALTER TABLE FoundPostStatusLog MODIFY (ChangeDate DATE NOT NULL);
-ALTER TABLE FoundPostStatusLog MODIFY (UserID VARCHAR2(10) NOT NULL);
-ALTER TABLE LostPostStatusLog MODIFY (StatusID VARCHAR2(10) NOT NULL);
-ALTER TABLE LostPostStatusLog MODIFY (ChangeDate DATE NOT NULL);
-ALTER TABLE LostPostStatusLog MODIFY (UserID VARCHAR2(10) NOT NULL);
-ALTER TABLE ClaimRequestStatusLog MODIFY (StatusID VARCHAR2(10) NOT NULL);
-ALTER TABLE ClaimRequestStatusLog MODIFY (ChangeDate DATE NOT NULL);
-ALTER TABLE ClaimRequestStatusLog MODIFY (UserID VARCHAR2(10) NOT NULL);
 
 COMMIT;

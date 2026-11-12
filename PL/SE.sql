@@ -1,6 +1,5 @@
 -- SE : ระบบประกาศของหาย-ของพบ
 -- SET SERVEROUTPUT ON
--- ทุก procedure ที่เปลี่ยนสถานะจะบันทึก log ให้เอง (LineNo = ลำดับถัดไปของรายการนั้น)
 
 
 -- 1. Helper : ตรวจสอบ Admin
@@ -20,7 +19,7 @@ END;
 /
 
 
--- 2. เปลี่ยนสถานะ + บันทึก log (ประกาศพบ / ประกาศหาย / คำขอคืน)
+-- 2. เปลี่ยนสถานะ (ประกาศพบ / ประกาศหาย / คำขอคืน)
 
 -- ประกาศพบ
 CREATE OR REPLACE PROCEDURE sp_change_found_status (
@@ -28,16 +27,11 @@ CREATE OR REPLACE PROCEDURE sp_change_found_status (
     p_statusid IN VARCHAR2,
     p_userid   IN VARCHAR2
 ) AS
-    v_line NUMBER;
 BEGIN
     UPDATE FoundPost SET StatusID = p_statusid WHERE FoundPostID = p_postid;
     IF SQL%ROWCOUNT = 0 THEN
         RAISE_APPLICATION_ERROR(-20001, 'ไม่พบประกาศพบ: ' || p_postid);
     END IF;
-
-    SELECT NVL(MAX(LineNo), 0) + 1 INTO v_line
-      FROM FoundPostStatusLog WHERE FoundPostID = p_postid;
-    INSERT INTO FoundPostStatusLog VALUES (p_postid, v_line, p_statusid, SYSDATE, p_userid);
     DBMS_OUTPUT.PUT_LINE('ประกาศพบ ' || p_postid || ' -> ' || p_statusid);
 END;
 /
@@ -48,16 +42,11 @@ CREATE OR REPLACE PROCEDURE sp_change_lost_status (
     p_statusid IN VARCHAR2,
     p_userid   IN VARCHAR2
 ) AS
-    v_line NUMBER;
 BEGIN
     UPDATE LostPost SET StatusID = p_statusid WHERE LostPostID = p_postid;
     IF SQL%ROWCOUNT = 0 THEN
         RAISE_APPLICATION_ERROR(-20002, 'ไม่พบประกาศหาของหาย: ' || p_postid);
     END IF;
-
-    SELECT NVL(MAX(LineNo), 0) + 1 INTO v_line
-      FROM LostPostStatusLog WHERE LostPostID = p_postid;
-    INSERT INTO LostPostStatusLog VALUES (p_postid, v_line, p_statusid, SYSDATE, p_userid);
     DBMS_OUTPUT.PUT_LINE('ประกาศหาของหาย ' || p_postid || ' -> ' || p_statusid);
 END;
 /
@@ -68,16 +57,11 @@ CREATE OR REPLACE PROCEDURE sp_change_claim_status (
     p_statusid  IN VARCHAR2,
     p_userid    IN VARCHAR2
 ) AS
-    v_line NUMBER;
 BEGIN
     UPDATE ClaimRequest SET StatusID = p_statusid WHERE RequestID = p_requestid;
     IF SQL%ROWCOUNT = 0 THEN
         RAISE_APPLICATION_ERROR(-20003, 'ไม่พบคำขอคืน: ' || p_requestid);
     END IF;
-
-    SELECT NVL(MAX(LineNo), 0) + 1 INTO v_line
-      FROM ClaimRequestStatusLog WHERE RequestID = p_requestid;
-    INSERT INTO ClaimRequestStatusLog VALUES (p_requestid, v_line, p_statusid, SYSDATE, p_userid);
     DBMS_OUTPUT.PUT_LINE('คำขอคืน ' || p_requestid || ' -> ' || p_statusid);
 END;
 /
@@ -107,7 +91,6 @@ BEGIN
                            FinderAddress, ImageURL, FoundLocation, StatusID, PostDate, FoundDate, UserID)
     VALUES (p_postid, p_title, p_itemname, p_findername, p_finderphone, p_finderemail,
             p_finderaddr, p_imageurl, p_location, 'PS01', TRUNC(SYSDATE), p_founddate, p_adminid);
-    INSERT INTO FoundPostStatusLog VALUES (p_postid, 1, 'PS01', SYSDATE, p_adminid);
     DBMS_OUTPUT.PUT_LINE('โพสต์ประกาศพบเรียบร้อย: ' || p_postid);
 END;
 /
@@ -138,7 +121,6 @@ CREATE OR REPLACE PROCEDURE sp_create_lost_post (
 ) AS
 BEGIN
     INSERT INTO LostPost VALUES (p_postid, p_title, TRUNC(SYSDATE), 'PS04', p_userid);
-    INSERT INTO LostPostStatusLog VALUES (p_postid, 1, 'PS04', SYSDATE, p_userid);
     DBMS_OUTPUT.PUT_LINE('สร้างประกาศหาของหายเรียบร้อย: ' || p_postid);
 END;
 /
@@ -205,7 +187,6 @@ BEGIN
     END IF;
 
     INSERT INTO ClaimRequest VALUES (p_requestid, p_postid, p_userid, 'CS01', TRUNC(SYSDATE), p_detail);
-    INSERT INTO ClaimRequestStatusLog VALUES (p_requestid, 1, 'CS01', SYSDATE, p_userid);
 
     IF v_status = 'PS01' THEN
         sp_change_found_status(p_postid, 'PS02', p_userid);
@@ -282,45 +263,7 @@ END;
 /
 
 
--- 6. Report : ประวัติสถานะย้อนหลัง / จับคู่ประกาศหาย-ประกาศพบ
-
--- p_type : 'FOUND' / 'LOST' / 'CLAIM'
-CREATE OR REPLACE PROCEDURE sp_status_history (
-    p_type IN VARCHAR2,
-    p_id   IN VARCHAR2
-) AS
-    v_found BOOLEAN := FALSE;
-BEGIN
-    DBMS_OUTPUT.PUT_LINE('===== ประวัติสถานะ ' || p_type || ' ' || p_id || ' =====');
-    FOR r IN (
-        SELECT l.LineNo, l.ChangeDate, s.StatusName, u.FirstName || ' ' || u.LastName AS ByName
-          FROM FoundPostStatusLog l
-          JOIN PostStatus s ON s.StatusID = l.StatusID
-          JOIN Users u      ON u.UserID   = l.UserID
-         WHERE UPPER(p_type) = 'FOUND' AND l.FoundPostID = p_id
-        UNION ALL
-        SELECT l.LineNo, l.ChangeDate, s.StatusName, u.FirstName || ' ' || u.LastName
-          FROM LostPostStatusLog l
-          JOIN PostStatus s ON s.StatusID = l.StatusID
-          JOIN Users u      ON u.UserID   = l.UserID
-         WHERE UPPER(p_type) = 'LOST' AND l.LostPostID = p_id
-        UNION ALL
-        SELECT l.LineNo, l.ChangeDate, s.StatusName, u.FirstName || ' ' || u.LastName
-          FROM ClaimRequestStatusLog l
-          JOIN ClaimStatus s ON s.StatusID = l.StatusID
-          JOIN Users u       ON u.UserID   = l.UserID
-         WHERE UPPER(p_type) = 'CLAIM' AND l.RequestID = p_id
-         ORDER BY 1
-    ) LOOP
-        v_found := TRUE;
-        DBMS_OUTPUT.PUT_LINE(r.LineNo || '. ' || TO_CHAR(r.ChangeDate, 'DD/MM/YYYY HH24:MI')
-                             || '  ' || r.StatusName || '  โดย ' || r.ByName);
-    END LOOP;
-    IF NOT v_found THEN
-        DBMS_OUTPUT.PUT_LINE('ไม่พบประวัติ');
-    END IF;
-END;
-/
+-- 6. Report : จับคู่ประกาศหาย-ประกาศพบ
 
 -- หาประกาศพบที่น่าจะตรงกับประกาศหาของหาย (ประเภทตรงกัน + ยังไม่คืน + พบหลังวันประกาศหาไม่เกิน 7 วันก่อน)
 CREATE OR REPLACE PROCEDURE sp_match_lost_post (
@@ -366,10 +309,7 @@ END;
 --     sp_create_claim('RQ009', 'FP009', 'U006', 'น่าจะเป็นของผม');
 --     sp_approve_claim('RQ008', 'U001');                -- RQ009 ถูกปฏิเสธอัตโนมัติ
 --     sp_close_lost_post('LP003', 'U005', 1);
---     sp_status_history('FOUND', 'FP009');
---     sp_status_history('CLAIM', 'RQ009');
 --     sp_reject_claim('RQ002', 'U001');                 -- FP002 ไม่เหลือคำขอรอพิจารณา -> กลับเป็นรอเจ้าของ
---     sp_status_history('FOUND', 'FP002');
 -- END;
 -- /
 -- ROLLBACK;
